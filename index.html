@@ -224,7 +224,7 @@
         </div>
 
         <button onclick="initGame()">Initialize Splarg</button>
-        <p style="font-size:0.7em; margin-top:20px;">GAMEPAD READY</p>
+        <p style="font-size:0.7em; margin-top:20px;" id="menuGpStatus">GAMEPAD: WAITING...</p>
     </div>
 
     <div class="game-wrapper" id="gameWrapper">
@@ -275,6 +275,7 @@
         const finalScoreElement = document.getElementById('finalScore');
         const gameOverTitle = document.getElementById('gameOverTitle');
         const gpStatus = document.getElementById('gamepadStatus');
+        const menuGpStatus = document.getElementById('menuGpStatus');
 
         // Game State
         let arena;
@@ -285,7 +286,8 @@
         let score = 0;
         let isPaused = false;
         let isGameOver = false;
-        let isRunning = false;
+        let isRunning = false; // "In Game" flag
+        let isInMenu = true;   // "In Menu" flag
         
         // Visuals
         let themeColor = '#33ff00';
@@ -331,8 +333,13 @@
             context.scale(BLOCK_SIZE, BLOCK_SIZE);
 
             // Switch Screens
+            isInMenu = false;
             startScreen.style.display = 'none';
             wrapper.style.display = 'flex'; 
+            
+            // Prevent immediate input bleed from menu
+            buttonCooldowns.pause = Date.now() + 500;
+            buttonCooldowns.confirm = Date.now() + 500;
             
             // Start Loop
             arena = createMatrix(BOARD_W, BOARD_H);
@@ -349,9 +356,13 @@
 
         function quitToMenu() {
             isRunning = false;
+            isInMenu = true;
             wrapper.style.display = 'none';
             startScreen.style.display = 'block';
             wrapper.classList.remove('paused', 'gameover');
+            
+            // Restart menu input loop
+            menuLoop();
         }
 
         // --- Core Logic ---
@@ -533,7 +544,7 @@
             wrapper.classList.add('gameover');
             finalScoreElement.innerText = score;
 
-            // DYNAMIC GAME OVER TITLE BASED ON SCORE
+            // DYNAMIC GAME OVER TITLE
             if (score < 500) {
                 gameOverTitle.innerText = "MOUSE SHOCKED";
             } else if (score < 2000) {
@@ -565,9 +576,35 @@
         // --- Controls ---
         let buttonCooldowns = { left: 0, right: 0, down: 0, up: 0, rotate: 0, pause: 0, confirm: 0 };
 
-        window.addEventListener("gamepadconnected", (e) => gpStatus.innerText = "CONTROLLER ACTIVE");
-        window.addEventListener("gamepaddisconnected", (e) => gpStatus.innerText = "NO CONTROLLER");
+        window.addEventListener("gamepadconnected", (e) => {
+            const msg = "CONTROLLER ACTIVE";
+            gpStatus.innerText = msg;
+            menuGpStatus.innerText = msg + " (PRESS START/A)";
+            menuGpStatus.style.opacity = 1;
+        });
 
+        window.addEventListener("gamepaddisconnected", (e) => {
+            const msg = "NO CONTROLLER";
+            gpStatus.innerText = msg;
+            menuGpStatus.innerText = msg;
+        });
+
+        // MENU LOOP (Runs when in Start Screen)
+        function menuLoop() {
+            if (!isInMenu) return; // Stop if game started
+
+            const gp = navigator.getGamepads()[0];
+            if (gp) {
+                // Button 9 is usually START, Button 0 is usually A/Cross
+                if (gp.buttons[9].pressed || gp.buttons[0].pressed) {
+                    initGame();
+                    return;
+                }
+            }
+            requestAnimationFrame(menuLoop);
+        }
+
+        // GAME LOOP (Runs when playing)
         function updateGamepad() {
             const gp = navigator.getGamepads()[0];
             if (!gp) return;
@@ -581,10 +618,12 @@
             }
 
             if (isGameOver) {
+                // Restart
                 if ((gp.buttons[0].pressed || gp.buttons[9].pressed) && now > buttonCooldowns.confirm) {
                     restartGame();
                     buttonCooldowns.confirm = now + 500;
                 }
+                // Quit
                 if (gp.buttons[8].pressed && now > buttonCooldowns.confirm) {
                     quitToMenu();
                     buttonCooldowns.confirm = now + 500;
@@ -651,6 +690,9 @@
             else if (event.keyCode === 38) playerHardDrop();
             else if (event.keyCode === 81 || event.keyCode === 87) playerRotate(1);
         });
+
+        // Start input polling immediately
+        menuLoop();
     </script>
 </body>
 </html>
