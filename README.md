@@ -13,6 +13,10 @@ Unlike traditional games in this genre, **Splarg Drop** features a constant game
 
 ## ✨ Features
 
+* **Audio Engine:** Includes a synthesized 8-bit sound engine (using Web Audio API) for retro bleeps and bloops. No external MP3s required.
+* **Visual Feedback:** * **Screen Shake:** Feel the impact when you hard-drop pieces.
+* **Phosphor Flash:** The screen lights up momentarily when you clear lines.
+* **Social Sharing:** Easily post your "Horse Splashed" high scores to X (Twitter) or copy a result card to your clipboard.
 * **Constant Flow:** The drop speed remains constant throughout the game. You set the pace in the config menu.
 * **Dynamic Board Sizing:** Want a narrow 4-wide challenge? Or a massive 50-wide marathon? The game engine automatically scales the blocks to fit your screen based on your custom width and height inputs.
 * **Retro Terminal Aesthetic:** Featuring a "hollow-block" CRT visual style with a single-pixel border.
