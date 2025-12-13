@@ -23,6 +23,7 @@
             overflow: hidden;
             text-shadow: 0 0 5px var(--theme-color);
             transition: color 0.3s, text-shadow 0.3s;
+            user-select: none;
         }
 
         .game-wrapper {
@@ -36,6 +37,8 @@
             background-color: #000;
             box-shadow: 0 0 20px rgba(0,0,0,0.8);
             display: block;
+            /* Shake animation target */
+            transform: translate(0, 0); 
         }
 
         /* START SCREEN */
@@ -141,6 +144,17 @@
             margin-top: 20px;
         }
         button.quit-btn:hover { background: rgba(255,255,255,0.1); }
+        
+        .share-btn-group {
+            display: flex;
+            gap: 10px;
+            justify-content: center;
+            margin-top: 10px;
+        }
+        button.share-btn {
+            font-size: 0.8em;
+            padding: 5px 15px;
+        }
 
         .hud {
             position: absolute;
@@ -257,6 +271,12 @@
         <div class="overlay overlay-gameover">
             <h1 style="color: #fff" id="gameOverTitle">FAILURE</h1>
             <p>FINAL SCORE: <span id="finalScore">0</span></p>
+            
+            <div class="share-btn-group">
+                <button class="share-btn" onclick="shareToX()">POST TO X</button>
+                <button class="share-btn" onclick="copyScore()">COPY TEXT</button>
+            </div>
+
             <br>
             <button onclick="restartGame()">RESTART</button>
             <button class="quit-btn" onclick="quitToMenu()">QUIT TO MENU</button>
@@ -286,8 +306,12 @@
         let score = 0;
         let isPaused = false;
         let isGameOver = false;
-        let isRunning = false; // "In Game" flag
-        let isInMenu = true;   // "In Menu" flag
+        let isRunning = false; 
+        let isInMenu = true;   
+        
+        // Visual FX State
+        let shakeIntensity = 0; // Screen shake magnitude
+        let flashAlpha = 0;     // White screen flash for clearing lines
         
         // Visuals
         let themeColor = '#33ff00';
@@ -295,56 +319,81 @@
         let BOARD_H = 20;
         let BLOCK_SIZE = 20;
 
+        // --- AUDIO ENGINE (Web Audio API) ---
+        // Simple oscillator synth to avoid external file dependencies
+        const AudioEngine = {
+            ctx: null,
+            init: function() {
+                if (!this.ctx) {
+                    this.ctx = new (window.AudioContext || window.webkitAudioContext)();
+                }
+            },
+            playTone: function(freq, type, duration, vol=0.1) {
+                if (!this.ctx) return;
+                const osc = this.ctx.createOscillator();
+                const gain = this.ctx.createGain();
+                osc.type = type;
+                osc.frequency.setValueAtTime(freq, this.ctx.currentTime);
+                gain.gain.setValueAtTime(vol, this.ctx.currentTime);
+                gain.gain.exponentialRampToValueAtTime(0.01, this.ctx.currentTime + duration);
+                osc.connect(gain);
+                gain.connect(this.ctx.destination);
+                osc.start();
+                osc.stop(this.ctx.currentTime + duration);
+            },
+            sfxMove: function() { this.playTone(150, 'square', 0.05, 0.05); },
+            sfxRotate: function() { this.playTone(250, 'triangle', 0.05, 0.05); },
+            sfxDrop: function() { this.playTone(100, 'sawtooth', 0.2, 0.1); },
+            sfxClear: function() { 
+                // Arpeggio
+                this.playTone(400, 'square', 0.1, 0.1);
+                setTimeout(() => this.playTone(600, 'square', 0.1, 0.1), 50);
+                setTimeout(() => this.playTone(800, 'square', 0.2, 0.1), 100);
+            },
+            sfxGameOver: function() {
+                this.playTone(150, 'sawtooth', 0.5, 0.2);
+                setTimeout(() => this.playTone(100, 'sawtooth', 1.0, 0.2), 300);
+            }
+        };
+
         // --- Configuration & Styling ---
 
         function updatePreviewColor(color, el) {
             themeColor = color;
             document.documentElement.style.setProperty('--theme-color', color);
-            
-            // Update active swatch UI
             document.querySelectorAll('.swatch').forEach(s => s.classList.remove('active'));
             if(el) el.classList.add('active');
         }
 
         function initGame() {
-            // Read Inputs
+            AudioEngine.init(); // Must init on user interaction
+
             const wInput = parseInt(document.getElementById('cfgWidth').value);
             const hInput = parseInt(document.getElementById('cfgHeight').value);
             const sInput = parseInt(document.getElementById('cfgSpeed').value);
 
-            // Apply Settings
             BOARD_W = wInput > 3 ? wInput : 12;
             BOARD_H = hInput > 5 ? hInput : 20;
             dropInterval = sInput > 0 ? sInput : 1000;
 
-            // Calculate Scale for Canvas
             const scaleX = (canvas.width - 40) / BOARD_W; 
             const scaleY = (canvas.height - 40) / BOARD_H;
             BLOCK_SIZE = Math.min(scaleX, scaleY);
             
-            // Center the board
-            const totalBoardWidth = BOARD_W * BLOCK_SIZE;
-            const totalBoardHeight = BOARD_H * BLOCK_SIZE;
-            const offsetX = (canvas.width - totalBoardWidth) / 2;
-            const offsetY = (canvas.height - totalBoardHeight) / 2;
-
-            context.setTransform(1, 0, 0, 1, 0, 0); 
-            context.translate(offsetX, offsetY);
-            context.scale(BLOCK_SIZE, BLOCK_SIZE);
-
-            // Switch Screens
+            // Transform logic handled in Draw to accommodate Shake
+            
             isInMenu = false;
             startScreen.style.display = 'none';
             wrapper.style.display = 'flex'; 
             
-            // Prevent immediate input bleed from menu
             buttonCooldowns.pause = Date.now() + 500;
             buttonCooldowns.confirm = Date.now() + 500;
             
-            // Start Loop
             arena = createMatrix(BOARD_W, BOARD_H);
             playerReset();
             score = 0;
+            shakeIntensity = 0;
+            flashAlpha = 0;
             updateScoreDisplay();
             updateSpeedDisplay();
             isGameOver = false;
@@ -360,8 +409,6 @@
             wrapper.style.display = 'none';
             startScreen.style.display = 'block';
             wrapper.classList.remove('paused', 'gameover');
-            
-            // Restart menu input loop
             menuLoop();
         }
 
@@ -387,15 +434,10 @@
             matrix.forEach((row, y) => {
                 row.forEach((value, x) => {
                     if (value !== 0) {
-                        // Main Block Color
                         context.fillStyle = themeColor; 
                         context.fillRect(x + offset.x, y + offset.y, 1, 1);
-                        
-                        // "Hollow" Center
                         context.fillStyle = '#000000'; 
                         context.fillRect(x + offset.x + 0.1, y + offset.y + 0.1, 0.8, 0.8);
-                        
-                        // Inner Dot
                         context.fillStyle = themeColor;
                         context.fillRect(x + offset.x + 0.3, y + offset.y + 0.3, 0.4, 0.4);
                     }
@@ -404,16 +446,43 @@
         }
 
         function draw() {
-            // Clear entire canvas (untransformed)
+            // Apply Shake Calculation
+            let shakeX = 0;
+            let shakeY = 0;
+            if (shakeIntensity > 0) {
+                shakeX = (Math.random() - 0.5) * shakeIntensity;
+                shakeY = (Math.random() - 0.5) * shakeIntensity;
+                shakeIntensity *= 0.9; // Decay shake
+                if(shakeIntensity < 0.5) shakeIntensity = 0;
+            }
+
+            // Clear Screen
             context.save();
-            context.setTransform(1,0,0,1,0,0);
+            context.setTransform(1,0,0,1,0,0); // Identity transform for clearing
             context.fillStyle = '#000000';
             context.fillRect(0, 0, canvas.width, canvas.height);
+
+            // Flash Effect (Line Clear)
+            if (flashAlpha > 0) {
+                context.fillStyle = `rgba(255, 255, 255, ${flashAlpha})`;
+                context.fillRect(0, 0, canvas.width, canvas.height);
+                flashAlpha -= 0.1; // Decay flash
+            }
             context.restore();
 
-            // Draw Single Clean Wall (Board Border)
+            // Set Game Board Transform + Shake
+            const totalBoardWidth = BOARD_W * BLOCK_SIZE;
+            const totalBoardHeight = BOARD_H * BLOCK_SIZE;
+            const offsetX = ((canvas.width - totalBoardWidth) / 2) + shakeX;
+            const offsetY = ((canvas.height - totalBoardHeight) / 2) + shakeY;
+
+            context.setTransform(1, 0, 0, 1, 0, 0); 
+            context.translate(offsetX, offsetY);
+            context.scale(BLOCK_SIZE, BLOCK_SIZE);
+
+            // Draw Wall
             context.strokeStyle = themeColor;
-            context.lineWidth = 0.1; // 10% of a block width
+            context.lineWidth = 0.1;
             context.strokeRect(0, 0, BOARD_W, BOARD_H);
             
             drawMatrix(arena, {x: 0, y: 0});
@@ -466,6 +535,10 @@
                 const lineScores = [0, 40, 100, 300, 1200];
                 score += lineScores[rowCount];
                 updateScoreDisplay();
+                
+                // VISUAL & AUDIO FEEDBACK
+                flashAlpha = 0.4; // Trigger Flash
+                AudioEngine.sfxClear();
             }
         }
 
@@ -500,12 +573,18 @@
             playerReset();
             arenaSweep();
             dropCounter = 0;
+            
+            // VISUAL & AUDIO FEEDBACK
+            shakeIntensity = 5; // Trigger Shake
+            AudioEngine.sfxDrop();
         }
 
         function playerMove(dir) {
             player.pos.x += dir;
             if (collide(arena, player)) {
                 player.pos.x -= dir;
+            } else {
+                AudioEngine.sfxMove();
             }
         }
 
@@ -522,6 +601,7 @@
                     return;
                 }
             }
+            AudioEngine.sfxRotate();
         }
         
         // --- UI Updates ---
@@ -543,6 +623,7 @@
             isGameOver = true;
             wrapper.classList.add('gameover');
             finalScoreElement.innerText = score;
+            AudioEngine.sfxGameOver();
 
             // DYNAMIC GAME OVER TITLE
             if (score < 500) {
@@ -554,6 +635,27 @@
             } else {
                 gameOverTitle.innerText = "HORSE SPLASHED";
             }
+        }
+
+        // --- Social Sharing ---
+        
+        function getShareText() {
+            const title = gameOverTitle.innerText;
+            return `I played Splarg Drop and achieved: ${title}!\nScore: ${score}\n\n"You can drop a mouse down a thousand-yard mine shaft..."`;
+        }
+
+        function shareToX() {
+            const text = encodeURIComponent(getShareText());
+            // Replace url= with your repo URL once you have it
+            const url = `https://twitter.com/intent/tweet?text=${text}`;
+            window.open(url, '_blank');
+        }
+
+        function copyScore() {
+            const text = `=== SPLARG DROP ===\nRANK: ${gameOverTitle.innerText}\nSCORE: ${score}\n===================`;
+            navigator.clipboard.writeText(text).then(() => {
+                alert("Result copied to clipboard!");
+            });
         }
 
         function restartGame() {
@@ -589,13 +691,10 @@
             menuGpStatus.innerText = msg;
         });
 
-        // MENU LOOP (Runs when in Start Screen)
         function menuLoop() {
-            if (!isInMenu) return; // Stop if game started
-
+            if (!isInMenu) return; 
             const gp = navigator.getGamepads()[0];
             if (gp) {
-                // Button 9 is usually START, Button 0 is usually A/Cross
                 if (gp.buttons[9].pressed || gp.buttons[0].pressed) {
                     initGame();
                     return;
@@ -604,7 +703,6 @@
             requestAnimationFrame(menuLoop);
         }
 
-        // GAME LOOP (Runs when playing)
         function updateGamepad() {
             const gp = navigator.getGamepads()[0];
             if (!gp) return;
@@ -618,12 +716,10 @@
             }
 
             if (isGameOver) {
-                // Restart
                 if ((gp.buttons[0].pressed || gp.buttons[9].pressed) && now > buttonCooldowns.confirm) {
                     restartGame();
                     buttonCooldowns.confirm = now + 500;
                 }
-                // Quit
                 if (gp.buttons[8].pressed && now > buttonCooldowns.confirm) {
                     quitToMenu();
                     buttonCooldowns.confirm = now + 500;
@@ -691,7 +787,6 @@
             else if (event.keyCode === 81 || event.keyCode === 87) playerRotate(1);
         });
 
-        // Start input polling immediately
         menuLoop();
     </script>
 </body>
