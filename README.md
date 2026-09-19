@@ -1,5 +1,14 @@
 # Splarg Drop
 
+<!-- splarg-storefront:start -->
+<p align="center">
+  <strong><a href="https://splarg.itch.io/splargdrop">▶ Play in browser on itch.io</a></strong>
+</p>
+<p align="center">
+  <a href="https://splarg.itch.io/splargdrop">Screenshots & current public release</a> · <a href="https://splarg.com/">splarg.com</a>
+</p>
+<!-- splarg-storefront:end -->
+
 > *“You can drop a mouse down a thousand-yard mine shaft; and on arriving at the bottom, it gets a slight shock and walks away. A rat is killed, a man is broken, a horse splashes.”*
 >
 > — **J.B.S. Haldane**, *On Being the Right Size*
