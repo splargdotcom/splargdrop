@@ -7,6 +7,8 @@
 <img width="1919" height="1079" alt="Screenshot 2025-12-12 202305" src="https://github.com/user-attachments/assets/e2dc1821-34f8-42e0-a4cb-940cd6c57fa7" />
 <img width="1918" height="1079" alt="Screenshot 2025-12-12 202245" src="https://github.com/user-attachments/assets/3897d1f1-21c2-42fa-b2a8-190efb69cc94" />
 
+**[Play Splarg Drop](https://splargdotcom.github.io/splargdrop/)**
+
 **Splarg Drop** is a customizable, retro-terminal styled falling block puzzle game built with vanilla JavaScript.
 
 Unlike traditional games in this genre, **Splarg Drop** features a constant game loop—the speed does not increase as you level up. Instead, the challenge lies in endurance, grid management, and optimizing your playstyle to achieve the ultimate status of "Horse Splashed."
@@ -14,8 +16,7 @@ Unlike traditional games in this genre, **Splarg Drop** features a constant game
 ## ✨ Features
 
 * **Audio Engine:** Includes a synthesized 8-bit sound engine (using Web Audio API) for retro bleeps and bloops. No external MP3s required.
-* **Visual Feedback:** * **Screen Shake:** Feel the impact when you hard-drop pieces.
-* **Phosphor Flash:** The screen lights up momentarily when you clear lines.
+* **Visual Feedback:** Screen shake on hard drops and a phosphor flash when you clear lines.
 * **Social Sharing:** Easily post your "Horse Splashed" high scores to X (Twitter) or copy a result card to your clipboard.
 * **Constant Flow:** The drop speed remains constant throughout the game. You set the pace in the config menu.
 * **Dynamic Board Sizing:** Want a narrow 4-wide challenge? Or a massive 50-wide marathon? The game engine automatically scales the blocks to fit your screen based on your custom width and height inputs.
@@ -55,7 +56,7 @@ Because **Splarg Drop** uses zero external dependencies, running it is incredibl
 
 1.  **Clone the repo:**
     ```bash
-    git clone [https://github.com/your-username/splarg-drop.git](https://github.com/your-username/splarg-drop.git)
+    git clone https://github.com/splargdotcom/splargdrop.git
     ```
 2.  **Open the file:**
     Double-click `index.html` to open it in any modern web browser (Chrome, Firefox, Edge, Safari).
