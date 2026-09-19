@@ -9,6 +9,7 @@
 </p>
 <!-- splarg-storefront:end -->
 
+
 > *“You can drop a mouse down a thousand-yard mine shaft; and on arriving at the bottom, it gets a slight shock and walks away. A rat is killed, a man is broken, a horse splashes.”*
 >
 > — **J.B.S. Haldane**, *On Being the Right Size*
