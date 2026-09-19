@@ -9,6 +9,13 @@
 </p>
 <!-- splarg-storefront:end -->
 
+<!-- splarg-itch-media:start -->
+<p align="center">
+  <a href="https://splarg.itch.io/splargdrop"><img src="docs/itch/cover.png" alt="Splarg Drop cover art" width="640"></a>
+</p>
+<!-- splarg-itch-media:end -->
+
+
 
 > *“You can drop a mouse down a thousand-yard mine shaft; and on arriving at the bottom, it gets a slight shock and walks away. A rat is killed, a man is broken, a horse splashes.”*
 >
