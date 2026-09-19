@@ -21,8 +21,10 @@
 >
 > — **J.B.S. Haldane**, *On Being the Right Size*
 
-<img width="1919" height="1079" alt="Screenshot 2025-12-12 202305" src="https://github.com/user-attachments/assets/e2dc1821-34f8-42e0-a4cb-940cd6c57fa7" />
-<img width="1918" height="1079" alt="Screenshot 2025-12-12 202245" src="https://github.com/user-attachments/assets/3897d1f1-21c2-42fa-b2a8-190efb69cc94" />
+<p align="center">
+  <img src="https://github.com/user-attachments/assets/e2dc1821-34f8-42e0-a4cb-940cd6c57fa7" alt="Splarg Drop gameplay screenshot" width="48%">
+  <img src="https://github.com/user-attachments/assets/3897d1f1-21c2-42fa-b2a8-190efb69cc94" alt="Splarg Drop gameplay screenshot" width="48%">
+</p>
 
 **[Play Splarg Drop](https://splargdotcom.github.io/splargdrop/)**
 
